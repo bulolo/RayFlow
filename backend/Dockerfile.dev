@@ -1,0 +1,6 @@
+# syntax=docker/dockerfile:1.7
+FROM maven:3.9-eclipse-temurin-17
+WORKDIR /app
+COPY . .
+EXPOSE 3000
+CMD ["sh", "-c", "mvn -pl rayflow-server,rayflow-flink-sql-runner -am clean package -DskipTests && RUNNER_JAR=$(find rayflow-flink-sql-runner/target -maxdepth 1 -type f -name 'rayflow-flink-sql-runner-*.jar' ! -name '*.original' | sort | tail -n 1) && SERVER_JAR=$(find rayflow-server/target -maxdepth 1 -type f -name 'rayflow-server-*.jar' ! -name '*.original' | sort | tail -n 1) && test -n \"$RUNNER_JAR\" && test -n \"$SERVER_JAR\" && cp \"$RUNNER_JAR\" /app/rayflow-flink-sql-runner.jar && java -jar \"$SERVER_JAR\""]

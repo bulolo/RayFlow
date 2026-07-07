@@ -1,0 +1,63 @@
+# ==============================================================================
+# RayFlow .gitignore
+# ==============================================================================
+
+# --- Java / Maven ---
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+!deploy/docker/flink/custom-lib/
+!deploy/docker/flink/custom-lib/*.jar
+!deploy/docker/flink/custom-lib/**/
+!deploy/docker/flink/custom-lib/**/*.jar
+
+# --- IDE ---
+.idea/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- Spring Boot ---
+application-local.yml
+application-local.properties
+
+# --- Node.js ---
+node_modules/
+.pnpm-store/
+dist/
+build/
+.next/
+out/
+
+# --- Environment ---
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- Logs ---
+logs/
+*.log
+
+# --- Temp ---
+tmp/
+temp/

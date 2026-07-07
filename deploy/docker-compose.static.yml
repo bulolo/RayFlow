@@ -1,0 +1,62 @@
+name: rayflow-static
+
+services:
+  # 文档站点服务
+  docs:
+    build:
+      context: ../frontend/docs
+      dockerfile: Dockerfile.prod
+    image: ccr.ccs.tencentyun.com/rayflow/rayflow-docs:${DOCKER_IMAGE_TAG:-0.0.4}
+    container_name: rayflow_docs
+    restart: unless-stopped
+    ports:
+      - "${DOCS_PORT:-8003}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # 官网服务
+  website:
+    build:
+      context: ../frontend/website
+      dockerfile: Dockerfile.prod
+      args:
+        - NEXT_PUBLIC_DOCS_URL=${NEXT_PUBLIC_DOCS_URL:-http://localhost:8003}
+    image: ccr.ccs.tencentyun.com/rayflow/rayflow-website:${DOCKER_IMAGE_TAG:-0.0.4}
+    container_name: rayflow_website
+    restart: unless-stopped
+    ports:
+      - "${WEBSITE_PORT:-8004}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"

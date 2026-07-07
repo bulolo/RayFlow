@@ -1,0 +1,5 @@
+node_modules
+.pnpm-store
+.vitepress/cache
+.vitepress/dist
+.DS_Store

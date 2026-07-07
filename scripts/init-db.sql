@@ -1,0 +1,9 @@
+-- ==============================================================================
+-- RayFlow 数据库初始化脚本（已废弃）
+-- 说明:
+--   1. 基础表结构已迁移到 Flyway: backend/rayflow-server/src/main/resources/db/migration
+--   2. 请勿再通过 docker-entrypoint-initdb.d 挂载本文件初始化正式库
+--   3. 如需查看 0.0.2 初始结构, 请查看:
+--      backend/rayflow-server/src/main/resources/db/migration/V0.0.1__init_schema.sql
+--   4. 本文件不再承载任何可执行 DDL, 避免与 Flyway 形成双真相源
+-- ==============================================================================

@@ -1,0 +1,11 @@
+.git
+.DS_Store
+**/node_modules
+**/dist
+**/.next
+**/target
+**/.ignored
+**/.pnpm-store
+**/.turbo
+**/package-lock.json
+**/yarn.lock
