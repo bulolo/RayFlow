@@ -8,6 +8,8 @@ services:
       - .env
     volumes:
       - ${RAYFLOW_KUBECONFIG_DIR:-${HOME}/.kube}:/root/.kube:ro
+    environment:
+      - RAYFLOW_WORKER_URL=http://worker:8090
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/health >/dev/null || exit 1"]
@@ -24,6 +26,30 @@ services:
         condition: service_started
       rustfs-init:
         condition: service_completed_successfully
+      worker:
+        condition: service_healthy
+
+  # ── Image Build Worker (Docker-in-Docker) ─────────────────────────────────
+  # Runs docker buildx in isolation. Backend submits build tasks here via HTTP.
+  # Only this container is privileged; backend no longer mounts the host socket.
+  worker:
+    build:
+      context: ../worker
+      dockerfile: Dockerfile
+    container_name: rayflow_worker
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=
+      - WORKER_PORT=8090
+    volumes:
+      - worker_docker_data:/var/lib/docker
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8090/api/health > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   admin:
     build:
@@ -151,3 +177,4 @@ services:
 volumes:
   pgdata:
   rustfs_data:
+  worker_docker_data:

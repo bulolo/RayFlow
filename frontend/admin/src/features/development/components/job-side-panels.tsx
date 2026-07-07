@@ -385,7 +385,7 @@ export function VersionsPanel({
           onClick={() => void handlePublish()}
           disabled={!job?.id || publishPending}
         >
-          {publishPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+          {publishPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Rocket className="h-3.5 w-3.5" />}
           发布
         </Button>
       </div>
@@ -425,6 +425,17 @@ export function VersionsPanel({
                   <div className="mt-2 break-words font-medium leading-5 text-muted-foreground">
                     {version.remark || '无发布备注'}
                   </div>
+                  {version.imageUri ? (
+                    <div className="mt-2 rounded-lg border border-emerald-100 bg-emerald-50/60 px-3 py-2">
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-emerald-700">
+                        <Badge tone="success">{version.imagePublishStatus || 'IMAGE'}</Badge>
+                        <span>镜像已发布</span>
+                      </div>
+                      <div className="mt-1 break-all font-mono text-[11px] leading-5 text-emerald-800">
+                        {version.imageDigest || version.imageUri}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
                 <div className="shrink-0 text-right text-[11px] font-semibold text-muted-foreground">
                   {formatDateTime(version.createdAt)}
@@ -1077,16 +1088,23 @@ export function SettingsPanel({
             options={[
               { label: 'REST API (RayFlow SQL Runner)', value: 'REST' },
               { label: 'SQL Gateway', value: 'SQL_GATEWAY' },
+              { label: 'K8s Application (Operator)', value: 'K8S_APPLICATION' },
             ]}
           />
         ) : null}
         <SelectField
           label="执行模式"
           value={draft.executionMode ?? 'standalone'}
-          onValueChange={(value) => onChange({ ...draft, executionMode: value })}
+          onValueChange={(value) => onChange({
+            ...draft,
+            executionMode: value,
+            submitType: value === 'k8s-application'
+              ? 'K8S_APPLICATION'
+              : draft.submitType === 'K8S_APPLICATION' ? 'REST' : draft.submitType,
+          })}
           options={[
             { label: 'Standalone Session', value: 'standalone' },
-            { label: 'K8s Application (预留)', value: 'k8s-application' },
+            { label: 'K8s Application (Operator)', value: 'k8s-application' },
           ]}
         />
         <Field label="并行度" type="number" value={String(draft.parallelism ?? 1)} onChange={(event) => onChange({ ...draft, parallelism: Number(event.target.value) || 1 })} />
@@ -1244,6 +1262,7 @@ export function SettingsPanel({
           </div>
         ) : null}
         <Field label="描述" value={draft.description ?? ''} onChange={(event) => onChange({ ...draft, description: event.target.value })} />
+        <Field label="标签" placeholder="例如：demo,batch,paimon" value={draft.jobTags ?? ''} onChange={(event) => onChange({ ...draft, jobTags: event.target.value })} />
         <Field label="文档链接" placeholder="例如：https://docs.example.com/job-doc" value={draft.docUrl ?? ''} onChange={(event) => onChange({ ...draft, docUrl: event.target.value })} />
       </div>
     </div>

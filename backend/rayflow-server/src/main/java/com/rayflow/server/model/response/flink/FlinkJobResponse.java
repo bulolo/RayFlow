@@ -36,6 +36,7 @@ public class FlinkJobResponse {
     private String jarUri;
     private String dependencyRefs;
     private String description;
+    private String jobTags;
     private String docUrl;
     private Long alertChannelId;
     private String alertRule;
@@ -66,6 +67,7 @@ public class FlinkJobResponse {
                 .jarUri(job.getJarUri())
                 .dependencyRefs(job.getDependencyRefs())
                 .description(job.getDescription())
+                .jobTags(job.getJobTags())
                 .docUrl(job.getDocUrl())
                 .alertChannelId(job.getAlertChannelId())
                 .alertRule(job.getAlertRule())

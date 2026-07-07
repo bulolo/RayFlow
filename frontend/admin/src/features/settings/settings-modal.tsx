@@ -7,6 +7,7 @@ import { settingsTabs, type SettingsTabKey } from './config';
 import {
   AlertChannels,
   DefaultSettings,
+  ImageRegistry,
   ModelProviders,
   Permissions,
   SettingsShell,
@@ -35,6 +36,7 @@ export function SettingsModal() {
       {activeTab === 'users' && <Users />}
       {activeTab === 'permissions' && <Permissions />}
       {activeTab === 'defaults' && <DefaultSettings />}
+      {activeTab === 'image-registry' && <ImageRegistry />}
       {activeTab === 'model-providers' && <ModelProviders />}
     </SettingsShell>
   );

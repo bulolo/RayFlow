@@ -51,13 +51,16 @@ public class FlinkJobController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String keyword,
+            @RequestParam(name = "job_name", required = false) String jobName,
+            @RequestParam(name = "job_tags", required = false) String jobTags,
             @RequestParam(required = false) String status,
-            @RequestParam(name = "job_type", required = false) String jobType) {
+            @RequestParam(name = "job_type", required = false) String jobType,
+            @RequestParam(name = "runtime_mode", required = false) String runtimeMode) {
         if (isPager != 1) {
-            return R.ok(PageResponse.of(flinkJobService.listJobs(keyword, status, jobType), FlinkJobResponse::from));
+            return R.ok(PageResponse.of(flinkJobService.listJobs(keyword, jobName, jobTags, status, jobType, runtimeMode), FlinkJobResponse::from));
         }
         Page<FlinkJob> pageRequest = new Page<>(Math.max(page, 1), Math.max(size, 1));
-        IPage<FlinkJob> result = flinkJobService.pageJobs(pageRequest, keyword, status, jobType);
+        IPage<FlinkJob> result = flinkJobService.pageJobs(pageRequest, keyword, jobName, jobTags, status, jobType, runtimeMode);
         return R.ok(PageResponse.from(result, FlinkJobResponse::from));
     }
 
@@ -163,6 +166,7 @@ public class FlinkJobController {
         job.setFlinkConfig(request.getFlinkConfig());
         job.setParallelism(request.getParallelism());
         job.setDescription(request.getDescription());
+        job.setJobTags(request.getJobTags());
         job.setDocUrl(request.getDocUrl());
         job.setSavepointPath(request.getSavepointPath());
         job.setApplicationImage(request.getApplicationImage());

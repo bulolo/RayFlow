@@ -1,5 +1,6 @@
 export { AlertChannels } from './alert-channels';
 export { DefaultSettings } from './defaults';
+export { ImageRegistry } from './image-registry';
 export { ModelProviders } from './model-providers';
 export { Permissions } from './permissions';
 export { SettingsShell, type SettingsTab } from './shell';

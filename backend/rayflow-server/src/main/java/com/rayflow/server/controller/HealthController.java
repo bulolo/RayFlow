@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HealthController {
 
-    @Value("${rayflow.version:0.0.4}")
+    @Value("${rayflow.version:0.0.5}")
     private String version;
 
     @Operation(summary = "健康检查", operationId = "getHealth")

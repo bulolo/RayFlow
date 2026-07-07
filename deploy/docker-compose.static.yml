@@ -6,7 +6,7 @@ services:
     build:
       context: ../frontend/docs
       dockerfile: Dockerfile.prod
-    image: ccr.ccs.tencentyun.com/rayflow/rayflow-docs:${DOCKER_IMAGE_TAG:-0.0.4}
+    image: ccr.ccs.tencentyun.com/rayflow/rayflow-docs:${DOCKER_IMAGE_TAG:-0.0.5}
     container_name: rayflow_docs
     restart: unless-stopped
     ports:
@@ -37,7 +37,7 @@ services:
       dockerfile: Dockerfile.prod
       args:
         - NEXT_PUBLIC_DOCS_URL=${NEXT_PUBLIC_DOCS_URL:-http://localhost:8003}
-    image: ccr.ccs.tencentyun.com/rayflow/rayflow-website:${DOCKER_IMAGE_TAG:-0.0.4}
+    image: ccr.ccs.tencentyun.com/rayflow/rayflow-website:${DOCKER_IMAGE_TAG:-0.0.5}
     container_name: rayflow_website
     restart: unless-stopped
     ports:

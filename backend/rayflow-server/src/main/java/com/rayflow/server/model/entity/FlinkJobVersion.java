@@ -22,6 +22,12 @@ public class FlinkJobVersion {
     private String versionName;
     private String snapshotJson;
     private String remark;
+    private String imageUri;
+    private String imageDigest;
+    private String imagePublishStatus;
+    private String imagePublishLog;
+    /** 异步构建时 Worker 任务 ID，用于后台轮询更新构建状态 */
+    private String imageBuildTaskId;
     private Long tenantId;
     private Long createdBy;
 

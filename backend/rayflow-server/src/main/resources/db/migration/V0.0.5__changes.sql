@@ -1,0 +1,2 @@
+ALTER TABLE rf_flink_job
+    ADD COLUMN IF NOT EXISTS job_tags VARCHAR(512);

@@ -10,7 +10,7 @@ import { FlussConnectionsPanel } from '@/features/resource-center/panels/fluss-c
 import { PaimonConnectionsPanel } from '@/features/resource-center/panels/paimon-connections-panel';
 import { StarRocksConnectionsPanel } from '@/features/resource-center/panels/starrocks-connections-panel';
 
-const DEFAULT_TAB: ConnectionTab = 'paimon';
+const DEFAULT_TAB: ConnectionTab = 'flink';
 const TAB_PARAM = 'tab';
 const connectionTabKeys = new Set<ConnectionTab>(resourceTabs.map((tab) => tab.key));
 

@@ -4,12 +4,15 @@ import { useState } from 'react';
 
 export type OpsStatusFilter = 'all' | 'running' | 'abnormal' | 'created' | 'canceled' | 'finished';
 export type OpsTypeFilter = 'all' | 'SQL' | 'JAR' | 'PYTHON';
+export type OpsRuntimeModeFilter = 'all' | 'STREAMING' | 'BATCH';
 
 export function useDevelopmentOpsState() {
   const [opsStatusFilter, setOpsStatusFilter] = useState<OpsStatusFilter>('all');
   const [opsSelectionMode, setOpsSelectionMode] = useState(false);
-  const [opsKeyword, setOpsKeyword] = useState('');
+  const [opsJobNameKeyword, setOpsJobNameKeyword] = useState('');
+  const [opsTagKeyword, setOpsTagKeyword] = useState('');
   const [opsTypeFilter, setOpsTypeFilter] = useState<OpsTypeFilter>('all');
+  const [opsRuntimeModeFilter, setOpsRuntimeModeFilter] = useState<OpsRuntimeModeFilter>('all');
   const [opsPage, setOpsPage] = useState(1);
   const [opsPageSize, setOpsPageSize] = useState(10);
   const [selectedOpsJobIds, setSelectedOpsJobIds] = useState<number[]>([]);
@@ -31,22 +34,38 @@ export function useDevelopmentOpsState() {
     setSelectedOpsJobIds([]);
   }
 
-  function handleOpsSearchChange(value: string) {
-    setOpsKeyword(value);
+  function handleOpsRuntimeModeFilterChange(filter: string) {
+    setOpsRuntimeModeFilter(filter as OpsRuntimeModeFilter);
+    setOpsPage(1);
+    setSelectedOpsJobIds([]);
+  }
+
+  function handleOpsJobNameSearchChange(value: string) {
+    setOpsJobNameKeyword(value);
+    setOpsPage(1);
+    setSelectedOpsJobIds([]);
+  }
+
+  function handleOpsTagSearchChange(value: string) {
+    setOpsTagKeyword(value);
     setOpsPage(1);
     setSelectedOpsJobIds([]);
   }
 
   return {
     handleOpsFilterChange,
-    handleOpsSearchChange,
+    handleOpsJobNameSearchChange,
+    handleOpsRuntimeModeFilterChange,
+    handleOpsTagSearchChange,
     handleOpsSelectionModeChange,
     handleOpsTypeFilterChange,
-    opsKeyword,
+    opsJobNameKeyword,
     opsPage,
     opsPageSize,
+    opsRuntimeModeFilter,
     opsSelectionMode,
     opsStatusFilter,
+    opsTagKeyword,
     opsTypeFilter,
     selectedOpsJobIds,
     setOpsPage,

@@ -133,6 +133,7 @@ export function DevelopmentModals({
             options={[{ label: '未分组', value: '' }, ...groupOptions.map((group) => ({ label: group, value: group }))]}
           />
           <Field label="描述" placeholder="说明这个 Flink 作业的用途" value={newJob.description ?? ''} onChange={(event) => onNewJobChange({ ...newJob, description: event.target.value })} />
+          <Field label="标签" placeholder="例如：demo,batch,paimon" value={newJob.jobTags ?? ''} onChange={(event) => onNewJobChange({ ...newJob, jobTags: event.target.value })} />
           <Field label="文档链接" placeholder="例如：https://docs.example.com/job-doc" value={newJob.docUrl ?? ''} onChange={(event) => onNewJobChange({ ...newJob, docUrl: event.target.value })} />
           <SelectField
             label="作业类型"

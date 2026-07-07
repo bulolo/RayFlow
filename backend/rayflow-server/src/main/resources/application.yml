@@ -70,7 +70,7 @@ logging:
 
 # RayFlow 自定义配置
 rayflow:
-  version: ${RAYFLOW_VERSION:0.0.4}
+  version: ${RAYFLOW_VERSION:0.0.5}
   timezone: ${RAYFLOW_TIMEZONE:UTC}
   jwt:
     secret: ${JWT_SECRET}
@@ -117,3 +117,10 @@ rayflow:
       secret-key: ${RAYFLOW_ARTIFACT_S3_SECRET_KEY:rustfsadmin}
       bucket: ${RAYFLOW_ARTIFACT_S3_BUCKET:rayflow-artifacts}
       region: ${RAYFLOW_ARTIFACT_S3_REGION:us-east-1}
+  # Worker 容器配置（镜像构建服务）
+  worker:
+    url: ${RAYFLOW_WORKER_URL:http://worker:8090}
+  # 镜像发布配置
+  image-publish:
+    proxy: ${RAYFLOW_IMAGE_BUILD_PROXY:}
+    timeout-seconds: ${RAYFLOW_IMAGE_BUILD_TIMEOUT_SECONDS:900}

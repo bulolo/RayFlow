@@ -11,6 +11,8 @@ services:
       - ./backend:/app
       - m2:/root/.m2
       - ${RAYFLOW_KUBECONFIG_DIR:-${HOME}/.kube}:/root/.kube:ro
+    environment:
+      RAYFLOW_WORKER_URL: http://worker:8090
     env_file:
       - backend/.env
     healthcheck:
@@ -28,6 +30,30 @@ services:
         condition: service_started
       rustfs-init:
         condition: service_completed_successfully
+      worker:
+        condition: service_healthy
+
+  # ── Image Build Worker (Docker-in-Docker) ──────────────────────────────
+  # 其他服务不挂载宿主 docker.sock；只有 worker 特权运行 dockerd
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: rayflow_worker_dev
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=
+      - WORKER_PORT=8090
+    ports:
+      - "8090:8090"
+    volumes:
+      - worker_docker_data:/var/lib/docker
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8090/api/health > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   # Admin Frontend (Next.js)
   admin:
@@ -35,14 +61,14 @@ services:
       context: ./frontend/admin
       dockerfile: Dockerfile.dev
     container_name: rayflow_admin_dev
-    command: sh -c "corepack enable && pnpm install && pnpm dev"
+    command: sh -c "pnpm config set registry https://registry.npmmirror.com && pnpm install && pnpm dev"
     volumes:
       - ./frontend/admin:/app
       - /app/node_modules
     environment:
       - CI=true
       - NEXT_PUBLIC_API_BASE_URL=
-      - NEXT_PUBLIC_APP_VERSION=0.0.4
+      - NEXT_PUBLIC_APP_VERSION=0.0.5
       - RAYFLOW_API_PROXY_TARGET=http://backend:3000
     depends_on:
       backend:
@@ -72,22 +98,6 @@ services:
     volumes:
       - ./frontend/docs:/app
       - /app/node_modules
-
-  # Website Portal (Next.js)
-  website:
-    profiles:
-      - website
-    image: node:22-alpine
-    container_name: rayflow_website_dev
-    working_dir: /app
-    command: sh -c "corepack enable && pnpm install && pnpm exec next dev -p 8004 -H 0.0.0.0"
-    restart: unless-stopped
-    ports:
-      - "8004:8004"
-    volumes:
-      - ./frontend/website:/app
-      - /app/node_modules
-      - /app/.next
 
   # PostgreSQL
   postgres:
@@ -197,3 +207,4 @@ volumes:
   pgdata:
   m2:
   rustfs_data:
+  worker_docker_data:

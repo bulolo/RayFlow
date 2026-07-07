@@ -422,8 +422,8 @@ export function useDevelopmentJobActions({
   }
 
   function handleEditJob(job: FlinkJobResponse, onViewModeChange: (mode: 'develop') => void) {
-    if (job.id) setSelectedJobId(job.id);
     onViewModeChange('develop');
+    if (job.id) setSelectedJobId(job.id);
   }
 
   return {

@@ -4,11 +4,11 @@ import type { ConnectionTab } from '@/features/resource-center/lib/resource-cent
 import { cn } from '@/lib/utils';
 
 export const resourceTabs: Array<{ icon: typeof Database; key: ConnectionTab; label: string }> = [
-  { key: 'paimon', label: 'Paimon', icon: Database },
-  { key: 'fluss', label: 'Fluss 集群', icon: Network },
-  { key: 'starrocks', label: 'StarRocks', icon: Server },
   { key: 'flink', label: 'Flink 运行时', icon: Waypoints },
   { key: 'flink-jars', label: 'Flink JAR', icon: Package },
+  { key: 'fluss', label: 'Fluss 集群', icon: Network },
+  { key: 'paimon', label: 'Paimon', icon: Database },
+  { key: 'starrocks', label: 'StarRocks', icon: Server },
 ];
 
 export function ResourceConnectionTabs({

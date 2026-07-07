@@ -3,6 +3,7 @@ import {
   Activity,
   Bell,
   Bot,
+  Container,
   LayoutDashboard,
   Settings2,
   ShieldCheck,
@@ -10,10 +11,11 @@ import {
   Users,
 } from 'lucide-react';
 
-export type SettingsTabKey = 'alerts' | 'users' | 'permissions' | 'defaults' | 'model-providers';
+export type SettingsTabKey = 'alerts' | 'users' | 'permissions' | 'defaults' | 'model-providers' | 'image-registry';
 
 export const settingsTabs: Array<SettingsTab<SettingsTabKey>> = [
   { key: 'defaults', label: '默认设置', description: '系统级默认参数', group: '配置', icon: SlidersHorizontal },
+  { key: 'image-registry', label: '镜像仓库', description: '作业镜像推送仓库', group: '配置', icon: Container },
   { key: 'model-providers', label: '模型提供商', description: 'OpenAI 兼容接口与默认模型', group: '配置', icon: Bot },
   { key: 'users', label: '用户管理', description: '账号、状态与登录信息', group: '访问控制', icon: Users },
   { key: 'permissions', label: '权限管理', description: '角色与操作权限', group: '访问控制', icon: ShieldCheck },
@@ -127,6 +129,16 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: 'model-provider:read', label: '查看提供商', baseline: true, defaults: ['MEMBER', 'ADMIN'] },
       { key: 'model-provider:update', label: '修改配置', defaults: ['ADMIN'] },
       { key: 'model-provider:test', label: '测试连通性', defaults: ['ADMIN'] },
+    ],
+  },
+  {
+    label: '镜像仓库',
+    section: '系统设置',
+    icon: Container,
+    caps: [
+      { key: 'image-registry:read', label: '查看镜像仓库', baseline: true, defaults: ['MEMBER', 'ADMIN'] },
+      { key: 'image-registry:update', label: '修改配置', defaults: ['ADMIN'] },
+      { key: 'image-registry:test', label: '测试连通性', defaults: ['ADMIN'] },
     ],
   },
 ];

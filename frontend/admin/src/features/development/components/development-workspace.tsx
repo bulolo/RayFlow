@@ -49,6 +49,7 @@ import {
   useDevelopmentSqlPreview,
   useDevelopmentVariables,
   useJobAutoRefresh,
+  type OpsRuntimeModeFilter,
 } from '@/features/development/hooks';
 import type { DevelopmentConfirmDialogState } from '@/features/development/types';
 import { useAuthTokenState } from '@/hooks/use-auth-token-state';
@@ -67,6 +68,7 @@ function jobTypeLabel(type?: string) {
 
 const opsStatusFilters: OpsStatusFilter[] = ['all', 'running', 'abnormal', 'created', 'canceled', 'finished'];
 const opsTypeFilters: OpsTypeFilter[] = ['all', 'SQL', 'JAR', 'PYTHON'];
+const opsRuntimeModeFilters: OpsRuntimeModeFilter[] = ['all', 'STREAMING', 'BATCH'];
 
 function opsStatusFilterLabel(filter: OpsStatusFilter) {
   const labels: Record<OpsStatusFilter, string> = {
@@ -93,6 +95,15 @@ function opsTypeFilterLabel(filter: OpsTypeFilter) {
   return jobTypeLabel(filter);
 }
 
+function opsRuntimeModeFilterLabel(filter: OpsRuntimeModeFilter) {
+  const labels: Record<OpsRuntimeModeFilter, string> = {
+    all: '全部',
+    STREAMING: '流',
+    BATCH: '批',
+  };
+  return labels[filter];
+}
+
 export function DevelopmentWorkspace({
   selectedJobId: controlledSelectedJobId,
   onSelectedJobChange,
@@ -114,14 +125,18 @@ export function DevelopmentWorkspace({
   const [jobSearch, setJobSearch] = useState('');
   const {
     handleOpsFilterChange,
-    handleOpsSearchChange,
+    handleOpsJobNameSearchChange,
+    handleOpsRuntimeModeFilterChange,
+    handleOpsTagSearchChange,
     handleOpsSelectionModeChange,
     handleOpsTypeFilterChange,
-    opsKeyword,
+    opsJobNameKeyword,
     opsPage,
     opsPageSize,
+    opsRuntimeModeFilter,
     opsSelectionMode,
     opsStatusFilter,
+    opsTagKeyword,
     opsTypeFilter,
     selectedOpsJobIds,
     setOpsPage,
@@ -147,9 +162,11 @@ export function DevelopmentWorkspace({
       is_pager: 1,
       page: opsPage,
       size: opsPageSize,
-      keyword: opsKeyword.trim() || undefined,
+      job_name: opsJobNameKeyword.trim() || undefined,
+      job_tags: opsTagKeyword.trim() || undefined,
       status: opsStatusParam(opsStatusFilter),
       job_type: opsTypeFilter === 'all' ? undefined : opsTypeFilter,
+      runtime_mode: opsRuntimeModeFilter === 'all' ? undefined : opsRuntimeModeFilter,
     },
     { query: { enabled: hasToken && viewMode === 'ops' } },
   );
@@ -256,6 +273,14 @@ export function DevelopmentWorkspace({
       opsTypeFilters.map((filter) => ({
         key: filter,
         label: opsTypeFilterLabel(filter),
+      })),
+    [],
+  );
+  const opsRuntimeModeFilterOptions = useMemo(
+    () =>
+      opsRuntimeModeFilters.map((filter) => ({
+        key: filter,
+        label: opsRuntimeModeFilterLabel(filter),
       })),
     [],
   );
@@ -648,7 +673,8 @@ export function DevelopmentWorkspace({
           onEditJob={(job) => handleEditJob(job, onViewModeChange)}
           onExpandPreview={() => setPreviewHeight(224)}
           onFormatSql={handleFormatSql}
-          onKeywordChange={handleOpsSearchChange}
+          onJobNameKeywordChange={handleOpsJobNameSearchChange}
+          onTagKeywordChange={handleOpsTagSearchChange}
           onOpsBatchCancel={handleBatchCancelJobs}
           onOpsBatchRun={handleBatchRunJobs}
           onOpsBatchSavepoint={openBatchSavepoint}
@@ -664,6 +690,7 @@ export function DevelopmentWorkspace({
           onOpsPublish={handlePublishJob}
           onOpsSavepoint={openJobSavepoint}
           onOpsStatusFilterChange={handleOpsFilterChange}
+          onOpsRuntimeModeFilterChange={handleOpsRuntimeModeFilterChange}
           onOpsTypeFilterChange={handleOpsTypeFilterChange}
           onPreview={() => {
             setPreviewTab('result');
@@ -687,7 +714,8 @@ export function DevelopmentWorkspace({
           operatingJobIds={operatingJobIds}
           publishPending={publishPending}
           opsJobs={opsRows}
-          opsKeyword={opsKeyword}
+          opsJobNameKeyword={opsJobNameKeyword}
+          opsTagKeyword={opsTagKeyword}
           opsLoading={opsInitialLoading || opsRefreshing}
           opsPage={opsPage}
           opsPageCount={opsPageCount}
@@ -696,6 +724,8 @@ export function DevelopmentWorkspace({
           opsStatusFilterOptions={opsFilterOptions}
           opsStatusFilterValue={opsStatusFilter}
           opsTotal={opsTotal}
+          opsRuntimeModeFilterOptions={opsRuntimeModeFilterOptions}
+          opsRuntimeModeFilterValue={opsRuntimeModeFilter}
           opsTypeFilterOptions={opsTypeFilterOptions}
           opsTypeFilterValue={opsTypeFilter}
           previewData={previewData}

@@ -1,0 +1,77 @@
+name: RayFlow Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - ce
+      - ee
+      - 0.0.*
+  pull_request:
+    branches:
+      - main
+      - master
+      - ce
+      - ee
+      - 0.0.*
+
+jobs:
+  backend-check:
+    name: Backend Compile & Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Compile Backend & Verify Database Migrations
+        run: |
+          make check-backend
+
+  frontend-check:
+    name: Frontend Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Admin Console Checks
+        run: |
+          cd frontend/admin
+          pnpm install
+          pnpm lint
+          pnpm typecheck
+
+      - name: Docs Site Build Check
+        run: |
+          cd frontend/docs
+          pnpm install
+          pnpm docs:build
+
+      - name: Website Checks (If Exists)
+        run: |
+          if [ -d "frontend/website" ]; then
+            cd frontend/website
+            pnpm install
+            pnpm lint
+            pnpm typecheck
+          else
+            echo "Website directory not present, skipping checks."
+          fi

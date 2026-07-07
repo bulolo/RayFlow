@@ -12,6 +12,8 @@ import org.apache.flink.util.CloseableIterator;
 import org.apache.flink.types.Row;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -25,11 +27,14 @@ public class RayFlowSqlRunner {
     public static void main(String[] args) {
         Map<String, String> parameters = parseArgs(args);
         String encodedSql = parameters.get("sql-base64");
-        if (encodedSql == null || encodedSql.isBlank()) {
-            throw new IllegalArgumentException("--sql-base64 is required");
+        String sqlFile = parameters.get("sql-file");
+        if ((encodedSql == null || encodedSql.isBlank()) && (sqlFile == null || sqlFile.isBlank())) {
+            throw new IllegalArgumentException("--sql-base64 or --sql-file is required");
         }
 
-        String sql = new String(Base64.getUrlDecoder().decode(encodedSql), StandardCharsets.UTF_8);
+        String sql = sqlFile != null && !sqlFile.isBlank()
+                ? readSqlFile(sqlFile)
+                : new String(Base64.getUrlDecoder().decode(encodedSql), StandardCharsets.UTF_8);
         String encodedJobName = parameters.get("job-name-base64");
         String jobName = encodedJobName == null || encodedJobName.isBlank()
                 ? null
@@ -78,6 +83,14 @@ public class RayFlowSqlRunner {
             throw new IllegalArgumentException("Flink SQL must contain at least one INSERT statement");
         }
         statementSet.execute();
+    }
+
+    private static String readSqlFile(String sqlFile) {
+        try {
+            return Files.readString(Path.of(sqlFile), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to read SQL file: " + sqlFile + ", " + e.getMessage(), e);
+        }
     }
 
     private static void executePreview(String sql, String jobName, Map<String, String> parameters) {

@@ -52,7 +52,7 @@ public class FlinkClusterRequest {
     @Pattern(regexp = "IfNotPresent|Always|Never", message = "镜像拉取策略不合法")
     private String imagePullPolicy;
 
-    @Pattern(regexp = "CLUSTER_IP|NODE_PORT|LOAD_BALANCER|INGRESS", message = "Kubernetes 服务对外类型不合法")
+    @Pattern(regexp = "CLUSTER_IP|NODE_PORT|LOAD_BALANCER", message = "Kubernetes 服务对外类型不合法")
     private String serviceExposureType;
 
     private String kubeConfigRef;

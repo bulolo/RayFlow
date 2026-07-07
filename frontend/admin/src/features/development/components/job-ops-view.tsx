@@ -1,16 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { BookOpen, Camera, Check, CheckSquare, ChevronDown, Loader2, Pencil, Play, Rocket, Square, Trash2, X } from 'lucide-react';
+import { Activity, BookOpen, Camera, Check, CheckSquare, ChevronDown, ExternalLink, Layers3, Loader2, Pencil, Play, Rocket, Search, Square, Trash2, X } from 'lucide-react';
 import {
   type FlinkJobResponse,
   useListNotificationChannels,
 } from '@/shared/api/generated';
-import { TableEmpty, TablePagination, TableShell, TableToolbar } from '@/components/data-display/table-shell';
+import { TableEmpty, TablePagination, TableShell } from '@/components/data-display/table-shell';
 import { useAuthTokenState } from '@/hooks/use-auth-token-state';
 import { Badge, Button, Tooltip } from '@/components/ui';
 import { getFlinkUiUrl } from '@/features/development/lib/flink-ui';
-import { normalizeGroupPath } from '@/features/development/lib/job-groups';
 import type { ExtendedFlinkJob } from '@/types/extended';
 
 export type OpsColumnFilterOption = {
@@ -42,6 +41,10 @@ function jobStatusTone(status?: string): 'success' | 'warning' | 'danger' | 'inf
   return 'neutral';
 }
 
+function isActiveJobStatus(status?: string) {
+  return status === 'SUBMITTING' || status === 'RUNNING';
+}
+
 function jobTypeLabel(type?: string) {
   const labels: Record<string, string> = {
     SQL: 'SQL',
@@ -49,11 +52,6 @@ function jobTypeLabel(type?: string) {
     PYTHON: 'Python',
   };
   return type ? labels[type] ?? '其他' : '未分类';
-}
-
-function runtimeModeLabel(mode?: string, jobType?: string) {
-  if (jobType !== 'SQL') return '-';
-  return mode === 'BATCH' ? '批处理' : '流处理';
 }
 
 function submitTypeLabel(type?: string) {
@@ -65,20 +63,57 @@ function submitTypeLabel(type?: string) {
   return type ? labels[type] ?? '其他' : '未配置';
 }
 
-function publishStatusLabel(status?: string) {
-  const labels: Record<string, string> = {
-    UNPUBLISHED: '未发布',
-    OUTDATED: '有未发布改动',
-    PUBLISHED: '已发布',
-  };
-  return status ? labels[status] ?? '未知' : '未发布';
+function RuntimeModeBadge({ jobType, mode }: { jobType?: string; mode?: string }) {
+  if (jobType !== 'SQL') {
+    return <span className="text-xs font-semibold text-slate-400">-</span>;
+  }
+  const isBatch = mode === 'BATCH';
+  const Icon = isBatch ? Layers3 : Activity;
+  return (
+    <span
+      className={[
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold',
+        isBatch
+          ? 'border-amber-200 bg-amber-50 text-amber-700'
+          : 'border-sky-200 bg-sky-50 text-sky-700',
+      ].join(' ')}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {isBatch ? '批' : '流'}
+    </span>
+  );
 }
 
-function publishStatusTone(status?: string): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {
-  if (status === 'PUBLISHED') return 'success';
-  if (status === 'OUTDATED') return 'warning';
-  if (status === 'UNPUBLISHED') return 'neutral';
-  return 'neutral';
+function splitJobTags(tags?: string) {
+  return (tags ?? '')
+    .split(/[,\s，]+/)
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function JobTags({ tags }: { tags?: string }) {
+  const items = splitJobTags(tags);
+  if (!items.length) {
+    return <span className="text-xs font-semibold text-slate-400">-</span>;
+  }
+  const visible = items.slice(0, 3);
+  const hiddenCount = Math.max(0, items.length - visible.length);
+  return (
+    <Tooltip content={items.join(' / ')}>
+      <div className="flex min-w-0 items-center gap-1.5">
+        {visible.map((tag) => (
+          <span key={tag} className="inline-flex max-w-[88px] truncate rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+            {tag}
+          </span>
+        ))}
+        {hiddenCount ? (
+          <span className="inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+            +{hiddenCount}
+          </span>
+        ) : null}
+      </div>
+    </Tooltip>
+  );
 }
 
 function actionButtonClass(enabled: boolean, tone: 'blue' | 'green' | 'red' | 'slate' | 'violet') {
@@ -97,6 +132,13 @@ function actionButtonClass(enabled: boolean, tone: 'blue' | 'green' | 'red' | 's
 
 function actionTooltip(base: string, enabled: boolean, reason: string) {
   return enabled ? base : `${base}不可用：${reason}`;
+}
+
+function publishActionTooltip(status: string | undefined, enabled: boolean, reason: string) {
+  if (!enabled) return `发布不可用：${reason}`;
+  if (status === 'OUTDATED') return '发布当前保存定义：存在未发布的新版本';
+  if (status === 'UNPUBLISHED') return '发布当前保存定义：当前作业还没有发布版本';
+  return '发布当前保存定义';
 }
 
 function ColumnFilterHeader({
@@ -160,7 +202,7 @@ export function JobOpsView({
   clusterNameById,
   clusterAddressById,
   jobs,
-  keyword,
+  jobNameKeyword,
   loading,
   operatingJobIds,
   onBatchCancel,
@@ -169,13 +211,15 @@ export function JobOpsView({
   onCancel,
   onDelete,
   onEdit,
-  onKeywordChange,
+  onJobNameKeywordChange,
   onPageChange,
   onPageSizeChange,
   onPublish,
   onRun,
+  onRuntimeModeFilterChange,
   onSavepoint,
   onStatusFilterChange,
+  onTagKeywordChange,
   page,
   pageCount,
   pageSize,
@@ -185,9 +229,12 @@ export function JobOpsView({
   selectedJobs,
   onSelectedJobIdsChange,
   onSelectionModeChange,
+  runtimeModeFilterOptions,
+  runtimeModeFilterValue,
   onTypeFilterChange,
   statusFilterOptions,
   statusFilterValue,
+  tagKeyword,
   totalJobs,
   typeFilterOptions,
   typeFilterValue,
@@ -195,7 +242,7 @@ export function JobOpsView({
   clusterNameById: Map<number | undefined, string | undefined>;
   clusterAddressById: Map<number | undefined, string | undefined>;
   jobs: ExtendedFlinkJob[];
-  keyword: string;
+  jobNameKeyword: string;
   loading: boolean;
   operatingJobIds: Record<number, 'run' | 'debug' | 'publish' | 'cancel' | 'savepoint' | 'delete' | boolean>;
   onBatchCancel: (jobs: ExtendedFlinkJob[]) => void;
@@ -204,13 +251,15 @@ export function JobOpsView({
   onCancel: (job: FlinkJobResponse) => void;
   onDelete: (job: FlinkJobResponse) => void;
   onEdit: (job: FlinkJobResponse) => void;
-  onKeywordChange: (value: string) => void;
+  onJobNameKeywordChange: (value: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
   onPublish: (job: FlinkJobResponse) => void;
   onRun: (job: FlinkJobResponse) => void;
+  onRuntimeModeFilterChange: (value: string) => void;
   onSavepoint: (job: FlinkJobResponse) => void;
   onStatusFilterChange: (value: string) => void;
+  onTagKeywordChange: (value: string) => void;
   page: number;
   pageCount: number;
   pageSize: number;
@@ -220,9 +269,12 @@ export function JobOpsView({
   selectedJobs: ExtendedFlinkJob[];
   onSelectedJobIdsChange: (ids: number[]) => void;
   onSelectionModeChange: (enabled: boolean) => void;
+  runtimeModeFilterOptions: OpsColumnFilterOption[];
+  runtimeModeFilterValue: string;
   onTypeFilterChange: (value: string) => void;
   statusFilterOptions: OpsColumnFilterOption[];
   statusFilterValue: string;
+  tagKeyword: string;
   totalJobs: number;
   typeFilterOptions: OpsColumnFilterOption[];
   typeFilterValue: string;
@@ -268,15 +320,28 @@ export function JobOpsView({
         </div>
       </div>
       <div className={`min-h-0 flex-1 overflow-auto p-4 ${selectionMode ? 'pb-24' : ''}`}>
-        <div className="mb-4">
-          <TableToolbar
-            onSearchChange={onKeywordChange}
-            searchPlaceholder="搜索作业名称、目录、状态或类型"
-            searchValue={keyword}
-          />
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <label className="relative w-full max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={jobNameKeyword}
+              onChange={(event) => onJobNameKeywordChange(event.target.value)}
+              placeholder="搜索作业名称"
+              className="h-9 w-full rounded-lg border border-border bg-white pl-9 pr-3 text-sm placeholder-slate-400 outline-none transition duration-150 focus:border-primary focus:ring-2 focus:ring-primary/15"
+            />
+          </label>
+          <label className="relative w-full max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={tagKeyword}
+              onChange={(event) => onTagKeywordChange(event.target.value)}
+              placeholder="搜索标签"
+              className="h-9 w-full rounded-lg border border-border bg-white pl-9 pr-3 text-sm placeholder-slate-400 outline-none transition duration-150 focus:border-primary focus:ring-2 focus:ring-primary/15"
+            />
+          </label>
         </div>
         <TableShell>
-          <table className="w-full min-w-[1020px] border-collapse text-left text-sm">
+          <table className="w-full min-w-[1000px] border-collapse text-left text-sm">
             <thead className="border-b border-border-subtle bg-slate-50/70 text-xs font-semibold text-slate-500">
               <tr>
                 {selectionMode ? (
@@ -292,7 +357,14 @@ export function JobOpsView({
                   </th>
                 ) : null}
                 <th className="px-5 py-3 font-semibold">作业名称</th>
-                <th className="px-5 py-3 font-semibold">目录</th>
+                <th className="px-5 py-3 font-semibold">
+                  <ColumnFilterHeader
+                    activeValue={runtimeModeFilterValue}
+                    label="模式"
+                    onChange={onRuntimeModeFilterChange}
+                    options={runtimeModeFilterOptions}
+                  />
+                </th>
                 <th className="px-5 py-3 font-semibold">
                   <ColumnFilterHeader
                     activeValue={typeFilterValue}
@@ -301,7 +373,11 @@ export function JobOpsView({
                     options={typeFilterOptions}
                   />
                 </th>
-                <th className="px-5 py-3 font-semibold">模式</th>
+                <th className="px-5 py-3 font-semibold">标签</th>
+                <th className="px-5 py-3 font-semibold">运行时</th>
+                <th className="px-5 py-3 font-semibold">并行度</th>
+                <th className="px-5 py-3 font-semibold">提交方式</th>
+                <th className="px-5 py-3 font-semibold">告警</th>
                 <th className="px-5 py-3 font-semibold">
                   <ColumnFilterHeader
                     activeValue={statusFilterValue}
@@ -310,12 +386,7 @@ export function JobOpsView({
                     options={statusFilterOptions}
                   />
                 </th>
-                <th className="px-5 py-3 font-semibold">运行时</th>
-                <th className="px-5 py-3 font-semibold">并行度</th>
-                <th className="px-5 py-3 font-semibold">提交方式</th>
-                <th className="px-5 py-3 font-semibold">发布</th>
-                <th className="px-5 py-3 font-semibold">告警</th>
-                <th className="px-5 py-3 font-semibold">Flink Job ID</th>
+                <th className="px-5 py-3 font-semibold">Flink UI</th>
                 <th className="px-5 py-3 text-right font-semibold">操作</th>
               </tr>
             </thead>
@@ -333,6 +404,7 @@ export function JobOpsView({
                 const canEdit = !isOperating;
                 const canDelete = !loading && !isRunningJob && !isOperating;
                 const runDisabledReason = isRunningJob ? '作业正在运行' : job.publishStatus !== 'PUBLISHED' ? '请先发布版本' : '当前正在处理其他操作';
+                const publishNeedsAttention = job.publishStatus !== 'PUBLISHED';
                 return (
                   <tr key={jobId ?? job.jobName} className={isSelected ? 'bg-primary/5' : 'transition-colors hover:bg-slate-50/50'}>
                     {selectionMode ? (
@@ -380,11 +452,12 @@ export function JobOpsView({
                         </Tooltip>
                       ) : null}
                     </td>
-                    <td className="px-5 py-3 text-xs font-semibold text-slate-500">{normalizeGroupPath(job.jobGroup) || '未分组'}</td>
-                    <td className="px-5 py-3 text-xs font-semibold text-slate-600">{jobTypeLabel(job.jobType)}</td>
-                    <td className="px-5 py-3 text-xs font-semibold text-slate-500">{runtimeModeLabel(job.runtimeMode, job.jobType)}</td>
                     <td className="px-5 py-3">
-                      <Badge tone={jobStatusTone(job.status)}>{jobStatusLabel(job.status)}</Badge>
+                      <RuntimeModeBadge jobType={job.jobType} mode={job.runtimeMode} />
+                    </td>
+                    <td className="px-5 py-3 text-xs font-semibold text-slate-600">{jobTypeLabel(job.jobType)}</td>
+                    <td className="max-w-[220px] px-5 py-3">
+                      <JobTags tags={job.jobTags} />
                     </td>
                     <td className="max-w-[180px] px-5 py-3 text-xs font-semibold text-slate-500">
                       <Tooltip content={job.clusterId ? clusterNameById.get(job.clusterId) || `运行时 ${job.clusterId}` : '未绑定'}>
@@ -395,9 +468,6 @@ export function JobOpsView({
                     </td>
                     <td className="px-5 py-3 text-xs font-semibold text-slate-500">{job.parallelism ?? 1}</td>
                     <td className="px-5 py-3 text-xs font-semibold text-slate-500">{submitTypeLabel(job.submitType)}</td>
-                    <td className="px-5 py-3">
-                      <Badge tone={publishStatusTone(job.publishStatus)}>{publishStatusLabel(job.publishStatus)}</Badge>
-                    </td>
                     <td className="max-w-[150px] px-5 py-3 text-xs">
                       {job.alertChannelId ? (
                         <div className="truncate font-semibold text-slate-600">
@@ -413,43 +483,51 @@ export function JobOpsView({
                         <span className="text-slate-400 font-medium">未配置</span>
                       )}
                     </td>
+                    <td className="px-5 py-3">
+                      <Badge tone={jobStatusTone(job.status)}>{jobStatusLabel(job.status)}</Badge>
+                    </td>
                     {(() => {
                       const address = job.clusterId ? clusterAddressById.get(job.clusterId) : undefined;
-                      if (job.flinkJobId && address) {
+                      const showCurrentFlinkJobId = isActiveJobStatus(job.status) && Boolean(job.flinkJobId);
+                      if (showCurrentFlinkJobId && job.flinkJobId && address) {
                         return (
-                          <td className="max-w-[190px] px-5 py-3 font-mono text-xs">
-                            <Tooltip content={job.flinkJobId}>
+                          <td className="px-5 py-3">
+                            <Tooltip content={`打开 Flink UI · ${job.flinkJobId}`}>
                               <a
                                 href={getFlinkUiUrl(address, job)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block truncate font-semibold text-primary hover:underline"
+                                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-primary/20 bg-primary/5 px-2.5 text-xs font-bold text-primary transition hover:bg-primary/10"
                               >
-                                {job.flinkJobId}
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                打开
                               </a>
                             </Tooltip>
                           </td>
                         );
                       }
                       return (
-                        <td className="max-w-[190px] px-5 py-3 font-mono text-xs text-slate-500">
-                          <Tooltip content={job.flinkJobId || '-'}>
-                            <div className="truncate">{job.flinkJobId || '-'}</div>
+                        <td className="px-5 py-3 text-xs text-slate-400">
+                          <Tooltip content={job.flinkJobId && !showCurrentFlinkJobId ? '作业已结束，历史 Flink Job ID 请查看执行记录' : '当前没有运行中的 Flink Job'}>
+                            <div className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 font-semibold">-</div>
                           </Tooltip>
                         </td>
                       );
                     })()}
                     <td className="px-5 py-3">
                       <div className="flex justify-end gap-1.5">
-                        <Tooltip content={actionTooltip('发布当前保存定义', canPublish, isRunningJob ? '作业正在运行' : '当前正在处理其他操作')}>
+                        <Tooltip content={publishActionTooltip(job.publishStatus, canPublish, isRunningJob ? '作业正在运行' : '当前正在处理其他操作')}>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className={actionButtonClass(canPublish, 'violet')}
+                            className={`${actionButtonClass(canPublish, publishNeedsAttention ? 'violet' : 'slate')} relative`}
                             disabled={!canPublish}
                             aria-label="发布"
                             onClick={() => onPublish(job)}
                           >
+                            {publishNeedsAttention && canPublish ? (
+                              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
+                            ) : null}
                             {currentOperation === 'publish' ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             ) : (
@@ -539,7 +617,7 @@ export function JobOpsView({
                 );
               })}
               {!jobs.length ? (
-                <TableEmpty colSpan={selectionMode ? 13 : 12} message="当前筛选暂无作业，可调整表头筛选或搜索条件" />
+                <TableEmpty colSpan={selectionMode ? 12 : 11} message="当前筛选暂无作业，可调整表头筛选或搜索条件" />
               ) : null}
             </tbody>
           </table>

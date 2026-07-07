@@ -59,7 +59,7 @@ RayFlow 通过 Flink REST API 查询作业状态：
 ods-user-log-sync -> dwd-click-event-cleanup -> dws-user-behavior-hourly
 ```
 
-三个节点都是批处理示例，整体执行时间做了差异化，便于观察异步运行、节点推进和取消。
+三个节点都是批处理示例，作业位于 `demo/batch/scheduler` 分组。整体执行时间做了差异化，便于观察异步运行、节点推进和取消。
 
 ## 当前边界
 

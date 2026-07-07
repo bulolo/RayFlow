@@ -87,7 +87,7 @@ export function SettingsShell<T extends string>({
                 ) : null}
                 <button
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all',
+                    'my-0.5 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all',
                     selected
                       ? 'bg-white text-primary shadow-sm ring-1 ring-border'
                       : 'text-muted-foreground hover:bg-white hover:text-foreground',

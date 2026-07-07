@@ -13,7 +13,7 @@
 	build-backend build-admin build-docs build-website \
 	run-backend run-admin run-docs run-website \
 	format check-admin check-website check-docs check-backend check-all \
-	gen-swagger gen-sdk init-test migrate-streampark-batch migration-new migration-verify publish-ce-github set-version
+	gen-swagger gen-sdk init init-test migrate-streampark-batch migration-new migration-verify publish-ce-github set-version
 
 # ------------------------------------------------------------------------------
 # 基础配置
@@ -102,13 +102,14 @@ help:
 	@echo "  make run-website         本地启动 Website"
 	@echo "  make gen-swagger         从后端 /v3/api-docs 拉取 OpenAPI"
 	@echo "  make gen-sdk             从 OpenAPI 生成 Admin TypeScript SDK"
+	@echo "  make init                初始化全部测试数据"
 	@echo "  make init-test           初始化全部测试数据"
 	@echo "  make migrate-streampark-batch 迁移 StreamPark batch 标签作业到开发作业 (默认真实写入；DRY_RUN=1 预览)"
 	@echo "  make migration-new desc=add_xxx  按当前版本分支创建 Flyway migration 模板"
 	@echo "  make migration-verify    校验数据库迁移规范与脚本边界"
 	@echo ""
 	@echo " 🚀 [版本管理]"
-	@echo "  make set-version v=0.0.4 统一修改项目版本号"
+	@echo "  make set-version v=0.0.5 统一修改项目版本号"
 	@echo ""
 
 # ------------------------------------------------------------------------------
@@ -535,7 +536,11 @@ check-admin:
 
 check-website:
 	@echo "[Website] Running lint + typecheck..."
-	cd frontend/website && pnpm lint && pnpm typecheck
+	@if [ -d "frontend/website" ]; then \
+		cd frontend/website && pnpm lint && pnpm typecheck; \
+	else \
+		echo "[Website] Directory frontend/website not found, skipping check-website"; \
+	fi
 
 check-docs:
 	@echo "[Docs] Building docs..."
@@ -607,6 +612,8 @@ gen-swagger:
 
 gen-sdk:
 	OPENAPI_URL=$(OPENAPI_URL) python3 scripts/generate_sdk.py
+
+init: init-test
 
 init-test:
 	@echo "🧪 [RayFlow] 正在初始化全部测试数据..."

@@ -48,6 +48,9 @@ public class FlinkJobRequest {
 
     private String description;
 
+    @Size(max = 512, message = "作业标签不能超过 512 字符")
+    private String jobTags;
+
     @Size(max = 1024, message = "文档链接不能超过 1024 字符")
     private String docUrl;
 

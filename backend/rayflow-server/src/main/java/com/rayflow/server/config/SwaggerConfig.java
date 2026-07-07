@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
-    @Value("${rayflow.version:0.0.4}")
+    @Value("${rayflow.version:0.0.5}")
     private String version;
 
     @Bean

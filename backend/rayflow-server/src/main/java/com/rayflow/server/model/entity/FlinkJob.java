@@ -43,6 +43,9 @@ public class FlinkJob {
     /** 告警触发策略（以逗号分隔，如 FAILED,CANCELED,FINISHED） */
     private String alertRule = "FAILED";
 
+    /** 作业标签（以逗号分隔） */
+    private String jobTags;
+
     /** Flink Job ID (运行后分配) */
     private String flinkJobId;
 

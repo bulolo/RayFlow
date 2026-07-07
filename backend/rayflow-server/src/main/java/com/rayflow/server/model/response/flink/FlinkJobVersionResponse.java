@@ -15,6 +15,11 @@ public class FlinkJobVersionResponse {
     private Integer versionNo;
     private String versionName;
     private String remark;
+    private String imageUri;
+    private String imageDigest;
+    private String imagePublishStatus;
+    private String imagePublishLog;
+    private String imageBuildTaskId;
     private LocalDateTime createdAt;
 
     public static FlinkJobVersionResponse from(FlinkJobVersion version) {
@@ -24,6 +29,11 @@ public class FlinkJobVersionResponse {
                 .versionNo(version.getVersionNo())
                 .versionName(version.getVersionName())
                 .remark(version.getRemark())
+                .imageUri(version.getImageUri())
+                .imageDigest(version.getImageDigest())
+                .imagePublishStatus(version.getImagePublishStatus())
+                .imagePublishLog(version.getImagePublishLog())
+                .imageBuildTaskId(version.getImageBuildTaskId())
                 .createdAt(version.getCreatedAt())
                 .build();
     }

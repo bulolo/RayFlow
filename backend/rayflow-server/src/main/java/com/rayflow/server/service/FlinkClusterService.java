@@ -278,19 +278,15 @@ public class FlinkClusterService extends ServiceImpl<FlinkClusterMapper, FlinkCl
             cluster.setClusterType("standalone");
         }
         if ("kubernetes".equalsIgnoreCase(cluster.getClusterType())) {
-            if (cluster.getDeploymentMode() == null || cluster.getDeploymentMode().isBlank()) {
-                cluster.setDeploymentMode("application");
-            }
+            cluster.setDeploymentMode("application");
             if (cluster.getServiceExposureType() == null || cluster.getServiceExposureType().isBlank()) {
                 cluster.setServiceExposureType("CLUSTER_IP");
             }
-            if ("application".equalsIgnoreCase(cluster.getDeploymentMode())) {
-                cluster.setAddress(null);
-                cluster.setGatewayAddress(null);
-                cluster.setGatewayStatus("NOT_CONFIGURED");
-                if (cluster.getFlinkVersion() == null || cluster.getFlinkVersion().isBlank()) {
-                    cluster.setFlinkVersion(extractVersionFromImage(cluster.getImage()));
-                }
+            cluster.setAddress(null);
+            cluster.setGatewayAddress(null);
+            cluster.setGatewayStatus("NOT_CONFIGURED");
+            if (cluster.getFlinkVersion() == null || cluster.getFlinkVersion().isBlank()) {
+                cluster.setFlinkVersion(extractVersionFromImage(cluster.getImage()));
             }
         } else {
             cluster.setClusterType("standalone");
@@ -326,10 +322,17 @@ public class FlinkClusterService extends ServiceImpl<FlinkClusterMapper, FlinkCl
     }
 
     private static void validateRuntimeFields(FlinkCluster cluster) {
-        if (!"kubernetes".equalsIgnoreCase(cluster.getClusterType()) || !"application".equalsIgnoreCase(cluster.getDeploymentMode())) {
-            if (cluster.getAddress() == null || cluster.getAddress().isBlank()) {
-                throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "Standalone 或 Kubernetes Session 运行时必须填写 REST 地址");
+        if ("kubernetes".equalsIgnoreCase(cluster.getClusterType())) {
+            String exposureType = cluster.getServiceExposureType();
+            if (!"CLUSTER_IP".equalsIgnoreCase(exposureType)
+                    && !"NODE_PORT".equalsIgnoreCase(exposureType)
+                    && !"LOAD_BALANCER".equalsIgnoreCase(exposureType)) {
+                throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "K8s Application 服务对外类型仅支持 ClusterIP、NodePort、LoadBalancer");
             }
+            return;
+        }
+        if (cluster.getAddress() == null || cluster.getAddress().isBlank()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST.getCode(), "Standalone 运行时必须填写 REST 地址");
         }
     }
 

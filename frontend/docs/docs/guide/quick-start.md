@@ -48,9 +48,9 @@ make init-test
 - 内置 Flink Runtime。
 - Paimon Catalog。
 - StarRocks 测试连接。
-- Flink SQL/JAR 示例作业。
+- Flink 示例作业，并按用途整理到 `demo/streaming`、`demo/batch/scheduler`、`demo/paimon`。
 - `scheduler-demo` 三节点批处理编排工作流。
-- Paimon batch word count 最小示例。
+- Paimon batch word count 最小示例位于 `demo/paimon`。
 
 开发默认账号：
 

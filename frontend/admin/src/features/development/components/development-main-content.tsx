@@ -17,6 +17,8 @@ import type { ExtendedFlinkJob } from '@/types/extended';
 
 const editorSkeletonRows = Array.from({ length: 13 });
 const settingsSkeletonRows = Array.from({ length: 6 });
+const opsSkeletonColumns = Array.from({ length: 11 });
+const opsSkeletonRows = Array.from({ length: 8 });
 
 interface DevelopmentMainContentProps {
   cancelDisabled: boolean;
@@ -41,16 +43,18 @@ interface DevelopmentMainContentProps {
   onEditJob: (job: FlinkJobResponse) => void;
   onExpandPreview: () => void;
   onFormatSql: () => void;
-  onKeywordChange: (value: string) => void;
+  onJobNameKeywordChange: (value: string) => void;
   onOpsBatchCancel: (jobs: ExtendedFlinkJob[]) => void;
   onOpsBatchRun: (jobs: ExtendedFlinkJob[]) => void;
   onOpsBatchSavepoint: (jobs: ExtendedFlinkJob[]) => void;
   onOpsPageChange: (page: number) => void;
   onOpsPageSizeChange: (size: number) => void;
   onOpsPublish: (job: FlinkJobResponse) => void;
+  onOpsRuntimeModeFilterChange: (value: string) => void;
   onOpsSavepoint: (job: FlinkJobResponse) => void;
   onOpsStatusFilterChange: (value: string) => void;
   onOpsTypeFilterChange: (value: string) => void;
+  onTagKeywordChange: (value: string) => void;
   onPreview: () => void;
   onPreviewResizeStart: (event: React.MouseEvent) => void;
   onPublish: () => void;
@@ -65,14 +69,17 @@ interface DevelopmentMainContentProps {
   onTriggerSavepoint: () => void;
   operatingJobIds: Record<number, 'run' | 'debug' | 'publish' | 'cancel' | 'savepoint' | 'delete' | boolean>;
   opsJobs: ExtendedFlinkJob[];
-  opsKeyword: string;
+  opsJobNameKeyword: string;
   opsLoading: boolean;
   opsPage: number;
   opsPageCount: number;
   opsPageSize: number;
   opsSelectionMode: boolean;
+  opsRuntimeModeFilterOptions: OpsColumnFilterOption[];
+  opsRuntimeModeFilterValue: string;
   opsStatusFilterOptions: OpsColumnFilterOption[];
   opsStatusFilterValue: string;
+  opsTagKeyword: string;
   opsTotal: number;
   opsTypeFilterOptions: OpsColumnFilterOption[];
   opsTypeFilterValue: string;
@@ -126,16 +133,18 @@ export function DevelopmentMainContent({
   onEditJob,
   onExpandPreview,
   onFormatSql,
-  onKeywordChange,
+  onJobNameKeywordChange,
   onOpsBatchCancel,
   onOpsBatchRun,
   onOpsBatchSavepoint,
   onOpsPageChange,
   onOpsPageSizeChange,
   onOpsPublish,
+  onOpsRuntimeModeFilterChange,
   onOpsSavepoint,
   onOpsStatusFilterChange,
   onOpsTypeFilterChange,
+  onTagKeywordChange,
   onPreview,
   onPreviewResizeStart,
   onPublish,
@@ -150,14 +159,17 @@ export function DevelopmentMainContent({
   onTriggerSavepoint,
   operatingJobIds,
   opsJobs,
-  opsKeyword,
+  opsJobNameKeyword,
   opsLoading,
   opsPage,
   opsPageCount,
   opsPageSize,
   opsSelectionMode,
+  opsRuntimeModeFilterOptions,
+  opsRuntimeModeFilterValue,
   opsStatusFilterOptions,
   opsStatusFilterValue,
+  opsTagKeyword,
   opsTotal,
   opsTypeFilterOptions,
   opsTypeFilterValue,
@@ -257,14 +269,14 @@ export function DevelopmentMainContent({
               <div className="h-8 w-20 animate-pulse rounded-md bg-slate-100" />
             </div>
             <div className="overflow-hidden rounded-lg border border-border-subtle bg-white">
-              <div className="grid h-10 grid-cols-[2fr_1fr_1fr_1fr_1.4fr_1fr_1fr_1.4fr] items-center gap-4 border-b border-border-subtle bg-slate-50/70 px-5">
-                {Array.from({ length: 8 }).map((_, index) => (
+              <div className="grid h-10 grid-cols-[2fr_.8fr_.8fr_1.2fr_1.2fr_.7fr_.9fr_1fr_.9fr_1.4fr_1fr] items-center gap-4 border-b border-border-subtle bg-slate-50/70 px-5">
+                {opsSkeletonColumns.map((_, index) => (
                   <div key={index} className="h-3 animate-pulse rounded bg-slate-200" />
                 ))}
               </div>
-              {Array.from({ length: 8 }).map((_, rowIndex) => (
-                <div key={rowIndex} className="grid h-14 grid-cols-[2fr_1fr_1fr_1fr_1.4fr_1fr_1fr_1.4fr] items-center gap-4 border-b border-border-subtle px-5 last:border-b-0">
-                  {Array.from({ length: 8 }).map((_, columnIndex) => (
+              {opsSkeletonRows.map((_, rowIndex) => (
+                <div key={rowIndex} className="grid h-14 grid-cols-[2fr_.8fr_.8fr_1.2fr_1.2fr_.7fr_.9fr_1fr_.9fr_1.4fr_1fr] items-center gap-4 border-b border-border-subtle px-5 last:border-b-0">
+                  {opsSkeletonColumns.map((_, columnIndex) => (
                     <div
                       key={columnIndex}
                       className="h-3 animate-pulse rounded bg-slate-100"
@@ -287,7 +299,8 @@ export function DevelopmentMainContent({
           clusterNameById={clusterNameById}
           clusterAddressById={clusterAddressById}
           jobs={opsJobs}
-          keyword={opsKeyword}
+          jobNameKeyword={opsJobNameKeyword}
+          tagKeyword={opsTagKeyword}
           loading={opsLoading}
           operatingJobIds={operatingJobIds}
           onCancel={onCancelJob}
@@ -296,9 +309,11 @@ export function DevelopmentMainContent({
           onBatchCancel={onOpsBatchCancel}
           onBatchRun={onOpsBatchRun}
           onBatchSavepoint={onOpsBatchSavepoint}
-          onKeywordChange={onKeywordChange}
+          onJobNameKeywordChange={onJobNameKeywordChange}
+          onRuntimeModeFilterChange={onOpsRuntimeModeFilterChange}
           onStatusFilterChange={onOpsStatusFilterChange}
           onTypeFilterChange={onOpsTypeFilterChange}
+          onTagKeywordChange={onTagKeywordChange}
           onRun={onRunJob}
           onPublish={onOpsPublish}
           onSavepoint={onOpsSavepoint}
@@ -313,6 +328,8 @@ export function DevelopmentMainContent({
           selectedJobs={selectedOpsJobs}
           onSelectedJobIdsChange={onSelectedOpsJobIdsChange}
           onSelectionModeChange={onSelectionModeChange}
+          runtimeModeFilterOptions={opsRuntimeModeFilterOptions}
+          runtimeModeFilterValue={opsRuntimeModeFilterValue}
           statusFilterOptions={opsStatusFilterOptions}
           statusFilterValue={opsStatusFilterValue}
           totalJobs={opsTotal}

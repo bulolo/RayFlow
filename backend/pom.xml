@@ -13,7 +13,7 @@
 
     <groupId>com.rayflow</groupId>
     <artifactId>rayflow</artifactId>
-    <version>0.0.4</version>
+    <version>0.0.5</version>
     <packaging>pom</packaging>
     <name>RayFlow</name>
     <description>Flink/Fluss/Paimon 任务发布管理平台</description>

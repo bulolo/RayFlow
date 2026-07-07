@@ -379,6 +379,41 @@ export interface ModelProviderConfigResponse {
   updatedAt?: string;
 }
 
+export interface ImageRegistryConfigRequest {
+  /**
+     * @minLength 0
+     * @maxLength 512
+     */
+  registryUrl: string;
+  /**
+     * @minLength 0
+     * @maxLength 128
+     */
+  namespaceName?: string;
+  /**
+     * @minLength 0
+     * @maxLength 256
+     */
+  username?: string;
+  /**
+     * @minLength 0
+     * @maxLength 512
+     */
+  password?: string;
+  enabled?: boolean;
+}
+
+export interface ImageRegistryConfigResponse {
+  id?: number;
+  registryUrl?: string;
+  namespaceName?: string;
+  username?: string;
+  password?: string;
+  enabled?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface FlussTopicRequest {
   clusterId: number;
   /**
@@ -473,7 +508,7 @@ export interface FlinkRuntimeRequest {
   image?: string;
   /** @pattern IfNotPresent|Always|Never */
   imagePullPolicy?: string;
-  /** @pattern CLUSTER_IP|NODE_PORT|LOAD_BALANCER|INGRESS */
+  /** @pattern CLUSTER_IP|NODE_PORT|LOAD_BALANCER */
   serviceExposureType?: string;
   kubeConfigRef?: string;
   podTemplate?: string;
@@ -525,6 +560,11 @@ export interface FlinkJobRequest {
      */
   parallelism?: number;
   description?: string;
+  /**
+     * @minLength 0
+     * @maxLength 512
+     */
+  jobTags?: string;
   /**
      * @minLength 0
      * @maxLength 1024
@@ -735,6 +775,7 @@ export interface FlinkJobResponse {
   jarUri?: string;
   dependencyRefs?: string;
   description?: string;
+  jobTags?: string;
   docUrl?: string;
   alertChannelId?: number;
   alertRule?: string;
@@ -767,6 +808,10 @@ export interface FlinkJobVersionResponse {
   versionNo?: number;
   versionName?: string;
   remark?: string;
+  imageUri?: string;
+  imageDigest?: string;
+  imagePublishStatus?: string;
+  imagePublishLog?: string;
   createdAt?: string;
 }
 
@@ -925,6 +970,63 @@ export interface SchedulerExecutionLogResponse {
   eventType?: string;
   message?: string;
   createdAt?: string;
+}
+
+export interface SystemInfoConnectionStatus {
+  backend?: string;
+  connection?: string;
+  ping?: boolean;
+  message?: string;
+}
+
+export interface SystemInfoMigrationSummary {
+  enabled?: boolean;
+  currentVersion?: string;
+  currentDescription?: string;
+  success?: boolean;
+}
+
+export interface SystemInfoResourceTypeCount {
+  type?: string;
+  count?: number;
+}
+
+export interface SystemInfoResourceSummary {
+  tenants?: number;
+  users?: number;
+  flinkJobs?: number;
+  schedulerWorkflows?: number;
+  paimonCatalogs?: number;
+  starRocksConnections?: number;
+  flussClusters?: number;
+  lakeResources?: SystemInfoResourceTypeCount[];
+}
+
+export interface SystemInfoSummary {
+  app?: string;
+  version?: string;
+  environment?: string;
+  timezone?: string;
+  javaVersion?: string;
+}
+
+export interface SystemInfoRuntimeSummary {
+  total?: number;
+  platform?: number;
+  tenant?: number;
+  running?: number;
+  unreachable?: number;
+  gatewayRunning?: number;
+  builtinFlinkVersion?: string;
+}
+
+export interface SystemInfoResponse {
+  system?: SystemInfoSummary;
+  database?: SystemInfoConnectionStatus;
+  cache?: SystemInfoConnectionStatus;
+  migration?: SystemInfoMigrationSummary;
+  runtimes?: SystemInfoRuntimeSummary;
+  resources?: SystemInfoResourceSummary;
 }
 
 export interface PaimonCatalogResponse {
@@ -1305,6 +1407,14 @@ export type UpdateModelProviderConfig400 = { [key: string]: unknown };
 
 export type UpdateModelProviderConfig500 = { [key: string]: unknown };
 
+export type GetImageRegistryConfig400 = { [key: string]: unknown };
+
+export type GetImageRegistryConfig500 = { [key: string]: unknown };
+
+export type UpdateImageRegistryConfig400 = { [key: string]: unknown };
+
+export type UpdateImageRegistryConfig500 = { [key: string]: unknown };
+
 export type GetFlussTopic400 = { [key: string]: unknown };
 
 export type GetFlussTopic500 = { [key: string]: unknown };
@@ -1536,6 +1646,10 @@ export type TestModelProviderConfig400 = { [key: string]: unknown };
 
 export type TestModelProviderConfig500 = { [key: string]: unknown };
 
+export type TestImageRegistryConfig400 = { [key: string]: unknown };
+
+export type TestImageRegistryConfig500 = { [key: string]: unknown };
+
 export type ListFlussTopicsParams = {
 cluster_id?: number;
 is_pager?: number;
@@ -1606,8 +1720,11 @@ is_pager?: number;
 page?: number;
 size?: number;
 keyword?: string;
+job_name?: string;
+job_tags?: string;
 status?: string;
 job_type?: string;
+runtime_mode?: string;
 };
 
 export type ListFlinkJobs400 = { [key: string]: unknown };
@@ -1764,6 +1881,10 @@ export type ListSchedulerExecutionLogs400 = { [key: string]: unknown };
 
 export type ListSchedulerExecutionLogs500 = { [key: string]: unknown };
 
+export type GetPlatformSystemInfo400 = { [key: string]: unknown };
+
+export type GetPlatformSystemInfo500 = { [key: string]: unknown };
+
 export type ListPaimonDatabasesParams = {
 refresh?: boolean;
 };
@@ -1848,4 +1969,3 @@ export type GetFlinkCheckpoints500 = { [key: string]: unknown };
 export type GetCurrentUser400 = { [key: string]: unknown };
 
 export type GetCurrentUser500 = { [key: string]: unknown };
-

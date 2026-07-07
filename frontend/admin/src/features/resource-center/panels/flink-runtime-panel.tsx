@@ -33,16 +33,22 @@ function serviceExposureTypeLabel(value?: string) {
     CLUSTER_IP: 'ClusterIP',
     NODE_PORT: 'NodePort',
     LOAD_BALANCER: 'LoadBalancer',
-    INGRESS: 'Ingress',
   };
   return value ? labels[value] ?? value : '-';
 }
 
 function runtimeAddressLabel(runtime: FlinkRuntimeResponse) {
-  if (runtime.clusterType === 'kubernetes' && runtime.deploymentMode === 'application') {
+  if (runtime.clusterType === 'kubernetes') {
     return serviceExposureTypeLabel(runtime.serviceExposureType);
   }
   return runtime.address ?? '-';
+}
+
+function runtimeDeploymentLabel(runtime: FlinkRuntimeResponse) {
+  if (runtime.clusterType === 'kubernetes') {
+    return 'Application (Operator)';
+  }
+  return runtime.deploymentMode ?? '-';
 }
 
 const yamlEditorTheme = EditorView.theme({
@@ -84,7 +90,7 @@ export function FlinkRuntimePanel() {
     if (!cluster.id) return;
     const result = await checkFlinkRuntime.mutateAsync({ id: cluster.id });
     await runtimeSettings.runtimes.refetch();
-    const isK8sApp = cluster.clusterType === 'kubernetes' && cluster.deploymentMode === 'application';
+    const isK8sApp = cluster.clusterType === 'kubernetes';
     if (result.clusterReachable) {
       if (isK8sApp) {
         toast.success(`K8s 配置「${cluster.clusterName}」检测通过，Namespace ${cluster.namespaceName ?? '-'} 可达`);
@@ -187,9 +193,9 @@ function FlinkRuntimeContent({
     if (!selectedRuntime) return [];
     const items: Array<[string, string]> = [
       ['类型', selectedRuntime.clusterType ?? '-'],
-      ['部署模式', selectedRuntime.deploymentMode ?? '-'],
+      ['部署模式', runtimeDeploymentLabel(selectedRuntime)],
       [
-        selectedRuntime.clusterType === 'kubernetes' && selectedRuntime.deploymentMode === 'application' ? '服务对外类型' : 'REST 地址',
+        selectedRuntime.clusterType === 'kubernetes' ? '服务对外类型' : 'REST 地址',
         runtimeAddressLabel(selectedRuntime),
       ],
       ['Flink 版本', selectedRuntime.flinkVersion ?? '-'],
@@ -316,9 +322,9 @@ function FlinkRuntimeContent({
                   >
                     <span className="min-w-0 truncate font-bold text-slate-900">{runtime.clusterName}</span>
                     <span className="min-w-0 truncate text-slate-600">{runtime.clusterType ?? '-'}</span>
-                    <span className="min-w-0 truncate text-slate-600">{runtime.deploymentMode ?? '-'}</span>
+                    <span className="min-w-0 truncate text-slate-600">{runtimeDeploymentLabel(runtime)}</span>
                     <span className="min-w-0 truncate text-slate-600">{runtimeAddressLabel(runtime)}</span>
-                    <span className="min-w-0 truncate text-slate-600">{runtime.clusterType === 'kubernetes' && runtime.deploymentMode === 'application' ? '-' : runtime.gatewayAddress ?? '-'}</span>
+                    <span className="min-w-0 truncate text-slate-600">{runtime.clusterType === 'kubernetes' ? '-' : runtime.gatewayAddress ?? '-'}</span>
                     <span className="min-w-0 truncate text-slate-600">{runtime.flinkVersion ?? '-'}</span>
                     <span className="text-right"><ConnectionStatusBadge status={connectionStatusLabel(runtime.status)} /></span>
                   </button>
@@ -411,7 +417,7 @@ function FlinkRuntimeFormModal({
   title: string;
 }) {
   const isKubernetes = form.clusterType === 'kubernetes';
-  const isKubernetesApplication = isKubernetes && (form.deploymentMode ?? 'application') === 'application';
+  const isKubernetesApplication = isKubernetes;
   const [k8sConfigTab, setK8sConfigTab] = useState<'kubeConfig' | 'podTemplate'>('kubeConfig');
   return (
     <Modal
@@ -444,11 +450,10 @@ function FlinkRuntimeFormModal({
         {isKubernetes ? (
           <SelectField
             label="部署模式"
-            value={form.deploymentMode ?? 'application'}
-            onValueChange={(value) => onFormChange({ ...form, deploymentMode: value })}
+            value="application"
+            onValueChange={() => onFormChange({ ...form, deploymentMode: 'application' })}
             options={[
-              { label: 'Application', value: 'application' },
-              { label: 'Session', value: 'session' },
+              { label: 'Application (Operator)', value: 'application' },
             ]}
           />
         ) : null}
@@ -466,7 +471,6 @@ function FlinkRuntimeFormModal({
               { label: 'ClusterIP', value: 'CLUSTER_IP' },
               { label: 'NodePort', value: 'NODE_PORT' },
               { label: 'LoadBalancer', value: 'LOAD_BALANCER' },
-              { label: 'Ingress', value: 'INGRESS' },
             ]}
           />
         )}

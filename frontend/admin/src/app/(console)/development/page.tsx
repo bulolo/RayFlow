@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import { DevelopmentPageClient } from './development-page-client';
 import type { DevelopmentViewMode } from '@/features/development';
@@ -19,5 +20,9 @@ export default async function DevelopmentPage({ searchParams }: DevelopmentPageP
   const urlViewMode = normalizeViewMode(params?.view);
   const initialViewMode: DevelopmentViewMode = urlViewMode ?? (cookieStore.get(DEVELOPMENT_VIEW_MODE_KEY)?.value === 'develop' ? 'develop' : 'ops');
 
-  return <DevelopmentPageClient initialViewMode={initialViewMode} />;
+  return (
+    <Suspense fallback={null}>
+      <DevelopmentPageClient initialViewMode={initialViewMode} />
+    </Suspense>
+  );
 }

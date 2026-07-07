@@ -118,7 +118,7 @@ export function extractVersionFromImageTag(image: string | undefined): string | 
 export function normalizeFlinkRuntimeForm(form: FlinkRuntimeRequest, existing?: FlinkRuntimeResponse): FlinkRuntimeRequest {
   const clusterType = form.clusterType === 'kubernetes' ? 'kubernetes' : 'standalone';
   const deploymentMode = clusterType === 'kubernetes'
-    ? form.deploymentMode || 'application'
+    ? 'application'
     : 'session';
   const defaultParallelism = Number(form.defaultParallelism);
   const isK8sApp = clusterType === 'kubernetes' && deploymentMode === 'application';
@@ -160,7 +160,7 @@ export function formFromFlinkRuntime(runtime?: FlinkRuntimeResponse | null): Fli
     clusterName: runtime.clusterName ?? '',
     clusterType: runtime.clusterType ?? 'standalone',
     defaultParallelism: runtime.defaultParallelism,
-    deploymentMode: runtime.deploymentMode ?? 'session',
+    deploymentMode: runtime.clusterType === 'kubernetes' ? 'application' : runtime.deploymentMode ?? 'session',
     description: runtime.description ?? '',
     gatewayAddress: runtime.gatewayAddress ?? '',
     image: runtime.image ?? '',

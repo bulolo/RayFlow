@@ -5,6 +5,7 @@ import com.rayflow.flink.client.FlinkRestClient;
 import com.rayflow.server.mapper.FlinkJobMapper;
 import com.rayflow.server.model.entity.FlinkCluster;
 import com.rayflow.server.model.entity.FlinkJob;
+import com.rayflow.server.service.submit.K8sOperatorApplicationSubmitter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -37,6 +38,7 @@ public class FlinkJobStatusWatcher {
     private final FlinkClusterService flinkClusterService;
     private final FlinkJobExecutionService flinkJobExecutionService;
     private final NotificationChannelService notificationChannelService;
+    private final K8sOperatorApplicationSubmitter k8sOperatorApplicationSubmitter;
 
     @Value("${rayflow.flink.rest-connect-timeout-ms:3000}")
     private int connectTimeoutMs;
@@ -55,11 +57,13 @@ public class FlinkJobStatusWatcher {
     public FlinkJobStatusWatcher(FlinkJobMapper flinkJobMapper,
                                  FlinkClusterService flinkClusterService,
                                  FlinkJobExecutionService flinkJobExecutionService,
-                                 NotificationChannelService notificationChannelService) {
+                                 NotificationChannelService notificationChannelService,
+                                 K8sOperatorApplicationSubmitter k8sOperatorApplicationSubmitter) {
         this.flinkJobMapper = flinkJobMapper;
         this.flinkClusterService = flinkClusterService;
         this.flinkJobExecutionService = flinkJobExecutionService;
         this.notificationChannelService = notificationChannelService;
+        this.k8sOperatorApplicationSubmitter = k8sOperatorApplicationSubmitter;
     }
 
     @PostConstruct
@@ -117,33 +121,54 @@ public class FlinkJobStatusWatcher {
      */
     private void syncSingleJob(FlinkJob job) {
         FlinkCluster cluster = resolveCluster(job.getClusterId());
-        if (cluster == null || cluster.getAddress() == null) {
+        if (cluster == null) {
             return;
         }
 
-        FlinkRestClient restClient = new FlinkRestClient(cluster.getAddress(), connectTimeoutMs, readTimeoutMs);
-        String flinkState = restClient.getJobState(job.getFlinkJobId());
-        if (flinkState == null || flinkState.isBlank()) {
-            return;
+        String mappedState;
+        String errorLog = null;
+        if (isK8sApplicationCluster(cluster)) {
+            K8sOperatorApplicationSubmitter.OperatorStatus status = k8sOperatorApplicationSubmitter.getStatus(cluster, job.getFlinkJobId());
+            if (status == null || status.status() == null || status.status().isBlank()) {
+                return;
+            }
+            mappedState = status.status();
+            errorLog = status.errorLog();
+        } else {
+            if (cluster.getAddress() == null) {
+                return;
+            }
+            FlinkRestClient restClient = new FlinkRestClient(cluster.getAddress(), connectTimeoutMs, readTimeoutMs);
+            String flinkState = restClient.getJobState(job.getFlinkJobId());
+            if (flinkState == null || flinkState.isBlank()) {
+                return;
+            }
+            mappedState = mapFlinkStatus(flinkState);
+            errorLog = "FAILED".equals(mappedState) ? restClient.getJobExceptionLog(job.getFlinkJobId()) : null;
         }
 
-        String mappedState = mapFlinkStatus(flinkState);
-        String errorLog = "FAILED".equals(mappedState) ? restClient.getJobExceptionLog(job.getFlinkJobId()) : null;
         flinkJobExecutionService.syncStatus(job.getCurrentExecutionId(), mappedState, errorLog);
 
-        if (!mappedState.equals(job.getStatus())) {
+        boolean statusChanged = !mappedState.equals(job.getStatus());
+        boolean clearCurrentFlinkJobId = shouldClearCurrentFlinkJobId(mappedState, job.getFlinkJobId());
+        if (statusChanged || clearCurrentFlinkJobId) {
             String previousStatus = job.getStatus();
+            String currentFlinkJobId = job.getFlinkJobId();
             job.setStatus(mappedState);
+            if (clearCurrentFlinkJobId) {
+                job.setFlinkJobId(null);
+            }
             flinkJobMapper.updateById(job);
             log.info("[FlinkJobStatusWatcher] job status changed: id={}, flinkJobId={}, {} -> {}",
-                    job.getId(), job.getFlinkJobId(), previousStatus, mappedState);
+                    job.getId(), currentFlinkJobId, previousStatus, mappedState);
 
-            // ── 扩展点：状态变更回调 ──
-            onJobStatusChanged(job, previousStatus, mappedState);
+            if (statusChanged) {
+                onJobStatusChanged(job, previousStatus, mappedState, currentFlinkJobId);
+            }
         }
     }
 
-    private void onJobStatusChanged(FlinkJob job, String previousStatus, String currentStatus) {
+    private void onJobStatusChanged(FlinkJob job, String previousStatus, String currentStatus, String currentFlinkJobId) {
         if (job.getAlertChannelId() == null) {
             return;
         }
@@ -174,7 +199,7 @@ public class FlinkJobStatusWatcher {
                     "新状态: %s",
                     job.getJobName(),
                     job.getId(),
-                    job.getFlinkJobId() != null ? job.getFlinkJobId() : "未知",
+                    currentFlinkJobId != null && !currentFlinkJobId.isBlank() ? currentFlinkJobId : "未知",
                     previousStatus,
                     currentStatus
             );
@@ -234,5 +259,24 @@ public class FlinkJobStatusWatcher {
             default:
                 return "CREATED";
         }
+    }
+
+    private static boolean isK8sApplicationCluster(FlinkCluster cluster) {
+        return "kubernetes".equalsIgnoreCase(cluster.getClusterType())
+                && "application".equalsIgnoreCase(cluster.getDeploymentMode());
+    }
+
+    private static boolean shouldClearCurrentFlinkJobId(String status, String flinkJobId) {
+        return flinkJobId != null && !flinkJobId.isBlank() && isTerminalJobStatus(status);
+    }
+
+    private static boolean isTerminalJobStatus(String status) {
+        return "FINISHED".equalsIgnoreCase(status)
+                || "FAILED".equalsIgnoreCase(status)
+                || "ERROR".equalsIgnoreCase(status)
+                || "CANCELED".equalsIgnoreCase(status)
+                || "CANCELLED".equalsIgnoreCase(status)
+                || "STOPPED".equalsIgnoreCase(status)
+                || "SUSPENDED".equalsIgnoreCase(status);
     }
 }

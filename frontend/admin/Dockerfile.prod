@@ -5,7 +5,10 @@ WORKDIR /app
 ENV CI=true
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN corepack enable
+ARG PNPM_VERSION=10.25.0
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+RUN npm install -g pnpm@${PNPM_VERSION} --registry=${NPM_REGISTRY} \
+  && pnpm config set registry ${NPM_REGISTRY}
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile

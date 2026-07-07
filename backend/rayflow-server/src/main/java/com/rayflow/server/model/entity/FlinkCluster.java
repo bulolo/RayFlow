@@ -54,7 +54,7 @@ public class FlinkCluster {
     /** 镜像拉取策略 */
     private String imagePullPolicy;
 
-    /** K8s 服务对外类型: CLUSTER_IP / NODE_PORT / LOAD_BALANCER / INGRESS */
+    /** K8s 服务对外类型: CLUSTER_IP / NODE_PORT / LOAD_BALANCER */
     private String serviceExposureType;
 
     /** K8s 凭证引用 */
